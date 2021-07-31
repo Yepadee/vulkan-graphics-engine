@@ -1,10 +1,27 @@
 cmake_minimum_required(VERSION "3.21.0")
-project("Grpahics" VERSION 1.0.0)
+project("Vulkan Graphics Engine" VERSION 1.0.0)
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/inc") 
+add_subdirectory(glfw-3.3.4)
+add_subdirectory(glm-0.9.9.8)
+
+find_package(Vulkan REQUIRED)
+
+# Add all source files
+file(GLOB_RECURSE SOURCE_FILES 
+	${CMAKE_SOURCE_DIR}/src/*.c
+	${CMAKE_SOURCE_DIR}/src/*.cpp)
+	
+# Add all header files
+file(GLOB_RECURSE HEADER_FILES 
+	${CMAKE_SOURCE_DIR}/inc/*.h
+	${CMAKE_SOURCE_DIR}/inc/*.hpp)
 
 
-add_executable("${PROJECT_NAME}" "src/main.cpp")
+add_executable(vge src/main.cpp)
 
-install(TARGETS "${PROJECT_NAME}" DESTINATION bin)
-install(FILES "main.cpp" DESTINATION src)
+target_link_libraries(vge glfw ${GLFW_LIBRARIES})
+target_link_libraries(vge glm::glm)
+target_link_libraries(vge Vulkan::Vulkan)
+
+install(TARGETS vge DESTINATION bin)
+install(FILES main.cpp DESTINATION src)
