@@ -1,3 +1,5 @@
+set (CMAKE_CXX_STANDARD 17)
+
 cmake_minimum_required(VERSION "3.21.0")
 project("Vulkan Graphics Engine" VERSION 1.0.0)
 
