@@ -6,25 +6,37 @@ project("Vulkan Graphics Engine" VERSION 1.0.0)
 add_subdirectory(glfw-3.3.4)
 add_subdirectory(glm-0.9.9.8)
 
+
+
 find_package(Vulkan REQUIRED)
 
 # Add all source files
 file(GLOB_RECURSE SOURCE_FILES 
-	${CMAKE_SOURCE_DIR}/src/*.c
-	${CMAKE_SOURCE_DIR}/src/*.cpp)
+	src/*.c
+	src/*.cpp)
 	
 # Add all header files
 file(GLOB_RECURSE HEADER_FILES 
-	${CMAKE_SOURCE_DIR}/inc/*.h
-	${CMAKE_SOURCE_DIR}/inc/*.hpp)
+	inc/*.h
+	inc/*.hpp)
 
-add_executable(vge src/main.cpp)
-target_link_libraries(vge glfw ${GLFW_LIBRARIES})
-target_link_libraries(vge glm::glm)
-target_link_libraries(vge Vulkan::Vulkan)
+set(SOURCES ${SOURCE_FILES} ${HEADER_FILES})
 
-install(TARGETS vge DESTINATION bin)
-install(FILES main.cpp DESTINATION src)
+
+add_executable(yge ${SOURCES})
+target_include_directories(yge PRIVATE inc)
+
+target_link_libraries(yge glfw ${GLFW_LIBRARIES})
+target_link_libraries(yge glm::glm)
+target_link_libraries(yge Vulkan::Vulkan)
+
+
+
+
+
+install(TARGETS yge DESTINATION bin)
+
+# Build Shaders
 
 if (${CMAKE_HOST_SYSTEM_PROCESSOR} STREQUAL "AMD64")
 	set(GLSL_VALIDATOR "$ENV{VULKAN_SDK}/Bin/glslangValidator.exe")
@@ -53,12 +65,12 @@ add_custom_target(
 	DEPENDS ${SPIRV_BINARY_FILES}
 )
   
-add_dependencies(vge Shaders)
+add_dependencies(yge Shaders)
   
-add_custom_command(TARGET vge POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:vge>/shaders/"
+add_custom_command(TARGET yge POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:yge>/shaders/"
 	COMMAND ${CMAKE_COMMAND} -E copy_directory
 		"${PROJECT_BINARY_DIR}/shaders"
-		"$<TARGET_FILE_DIR:vge>/shaders"
+		"$<TARGET_FILE_DIR:yge>/shaders"
 	)
 
