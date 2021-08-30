@@ -8,6 +8,7 @@ namespace yge
 {
     App::App()
     {
+        loadModels();
         createPipelineLayout();
         createPipeline();
         createCommandBuffers();
@@ -18,6 +19,17 @@ namespace yge
         vkDestroyPipelineLayout(device_.device(), pipelineLayout_, nullptr);
     }
 
+    void App::loadModels()
+    {
+        std::vector<Model::Vertex> vertices {
+            {{0.0f, -0.5f}},
+            {{0.5f, 0.5f}},
+            {{-0.5f, 0.5f}}
+        };
+
+        model_ = std::make_unique<Model>(device_, vertices);
+    }
+
     void App::run()
     {
         while (!window_.shouldClose())
@@ -25,6 +37,8 @@ namespace yge
             glfwPollEvents();
             drawFrame();
         }
+
+        vkDeviceWaitIdle(device_.device()); // Wait until resources are no longer in use
     }
 
     void App::createPipelineLayout()
@@ -97,7 +111,8 @@ namespace yge
             vkCmdBeginRenderPass(commandBuffers_[i], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
             pipeline_->bind(commandBuffers_[i]);
-            vkCmdDraw(commandBuffers_[i], 3, 1, 0, 0);
+            model_->bind(commandBuffers_[i]);
+            model_->draw(commandBuffers_[i]);
 
             vkCmdEndRenderPass(commandBuffers_[i]);
             if (vkEndCommandBuffer(commandBuffers_[i]) != VK_SUCCESS)

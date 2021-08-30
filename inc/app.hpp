@@ -1,9 +1,11 @@
 #pragma once
 
+// lib
 #include <window.hpp>
 #include <pipeline.hpp>
 #include <device.hpp>
 #include <swap_chain.hpp>
+#include <model.hpp>
 
 // std
 #include <memory>
@@ -27,6 +29,7 @@ namespace yge
         void run();
 
     private:
+        void loadModels();
         void createPipelineLayout();
         void createPipeline();
         void createCommandBuffers();
@@ -38,6 +41,7 @@ namespace yge
         std::unique_ptr<Pipeline> pipeline_;
         VkPipelineLayout pipelineLayout_;
         std::vector<VkCommandBuffer> commandBuffers_;
+        std::unique_ptr<Model> model_;
     };
 
 }
