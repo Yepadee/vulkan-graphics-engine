@@ -1,7 +1,7 @@
 #pragma once
 
 #include "device.hpp"
-#include "model.hpp"
+#include "game_object.hpp"
 #include "pipeline.hpp"
 #include "swap_chain.hpp"
 #include "window.hpp"
@@ -25,7 +25,7 @@ class App {
   void run();
 
  private:
-  void loadModels();
+  void loadGameObjects();
   void createPipelineLayout();
   void createPipeline();
   void createCommandBuffers();
@@ -33,6 +33,7 @@ class App {
   void drawFrame();
   void recreateSwapChain();
   void recordCommandBuffer(int imageIndex);
+  void renderGameObjects(VkCommandBuffer commandBuffer);
 
   Window ygeWindow{WIDTH, HEIGHT, "Vulkan Tutorial"};
   Device ygeDevice{ygeWindow};
@@ -40,6 +41,6 @@ class App {
   std::unique_ptr<Pipeline> ygePipeline;
   VkPipelineLayout pipelineLayout;
   std::vector<VkCommandBuffer> commandBuffers;
-  std::unique_ptr<Model> ygeModel;
+  std::vector<GameObject> gameObjects;
 };
 }  // namespace yge

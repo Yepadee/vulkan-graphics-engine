@@ -1,5 +1,11 @@
 #include "app.hpp"
 
+// libs
+#define GLM_FORCE_RADIANS
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <glm/glm.hpp>
+#include <glm/gtc/constants.hpp>
+
 // std
 #include <array>
 #include <cassert>
@@ -7,8 +13,15 @@
 
 namespace yge {
 
+struct SimplePushConstantData
+{
+  glm::mat2 transform{1.f}; // 2x2 Identity
+  glm::vec2 offset;
+  alignas(16) glm::vec3 color;
+};
+
 App::App() {
-  loadModels();
+  loadGameObjects();
   createPipelineLayout();
   recreateSwapChain();
   createCommandBuffers();
@@ -25,21 +38,35 @@ void App::run() {
   vkDeviceWaitIdle(ygeDevice.device());
 }
 
-void App::loadModels() {
+void App::loadGameObjects() {
   std::vector<Model::Vertex> vertices{
       {{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
       {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
       {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
-  ygeModel = std::make_unique<Model>(ygeDevice, vertices);
+  auto ygeModel = std::make_shared<Model>(ygeDevice, vertices);
+  auto triangle = GameObject::createGameObject();
+  triangle.model = ygeModel;
+  triangle.color = {.1f, .8f, .1f};
+  triangle.transform2d.translation.x = .2f;
+  triangle.transform2d.scale = {2.f, .5f};
+  triangle.transform2d.rotation = .25f * glm::two_pi<float>();
+
+  gameObjects.push_back(std::move(triangle));
 }
 
 void App::createPipelineLayout() {
+
+  VkPushConstantRange pushConstantRange{};
+  pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+  pushConstantRange.offset = 0;
+  pushConstantRange.size = sizeof(SimplePushConstantData);
+
   VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
   pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   pipelineLayoutInfo.setLayoutCount = 0;
   pipelineLayoutInfo.pSetLayouts = nullptr;
-  pipelineLayoutInfo.pushConstantRangeCount = 0;
-  pipelineLayoutInfo.pPushConstantRanges = nullptr;
+  pipelineLayoutInfo.pushConstantRangeCount = 1;
+  pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
   if (vkCreatePipelineLayout(ygeDevice.device(), &pipelineLayoutInfo, nullptr, &pipelineLayout) !=
       VK_SUCCESS) {
     throw std::runtime_error("failed to create pipeline layout!");
@@ -77,8 +104,8 @@ void App::createPipeline() {
   pipelineConfig.pipelineLayout = pipelineLayout;
   ygePipeline = std::make_unique<Pipeline>(
       ygeDevice,
-      "shaders/simple_shader.vert.spv",
-      "shaders/simple_shader.frag.spv",
+      "shaders/shader.vert.spv",
+      "shaders/shader.frag.spv",
       pipelineConfig);
 }
 
@@ -123,7 +150,7 @@ void App::recordCommandBuffer(int imageIndex) {
   renderPassInfo.renderArea.extent = ygeSwapChain->getSwapChainExtent();
 
   std::array<VkClearValue, 2> clearValues{};
-  clearValues[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
+  clearValues[0].color = {0.01f, 0.01f, 0.01f, 1.0f};
   clearValues[1].depthStencil = {1.0f, 0};
   renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
   renderPassInfo.pClearValues = clearValues.data();
@@ -141,13 +168,30 @@ void App::recordCommandBuffer(int imageIndex) {
   vkCmdSetViewport(commandBuffers[imageIndex], 0, 1, &viewport);
   vkCmdSetScissor(commandBuffers[imageIndex], 0, 1, &scissor);
 
-  ygePipeline->bind(commandBuffers[imageIndex]);
-  ygeModel->bind(commandBuffers[imageIndex]);
-  ygeModel->draw(commandBuffers[imageIndex]);
+  renderGameObjects(commandBuffers[imageIndex]);
 
   vkCmdEndRenderPass(commandBuffers[imageIndex]);
   if (vkEndCommandBuffer(commandBuffers[imageIndex]) != VK_SUCCESS) {
     throw std::runtime_error("failed to record command buffer!");
+  }
+}
+
+void App::renderGameObjects(VkCommandBuffer commandBuffer) {
+  ygePipeline->bind(commandBuffer);
+
+  for (auto& obj: gameObjects)
+  {
+    obj.transform2d.rotation = glm::mod(obj.transform2d.rotation + 0.0001f, glm::two_pi<float>());
+    SimplePushConstantData push{};
+    push.offset = obj.transform2d.translation;
+    push.color = obj.color;
+    push.transform = obj.transform2d.mat2();
+
+    vkCmdPushConstants(commandBuffer, pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(SimplePushConstantData), &push);
+
+    obj.model->bind(commandBuffer);
+    obj.model->draw(commandBuffer);
+
   }
 }
 
