@@ -3,8 +3,8 @@
 #include "device.hpp"
 #include "game_object.hpp"
 #include "pipeline.hpp"
-#include "swap_chain.hpp"
 #include "window.hpp"
+#include "renderer.hpp"
 
 // std
 #include <memory>
@@ -28,19 +28,14 @@ class App {
   void loadGameObjects();
   void createPipelineLayout();
   void createPipeline();
-  void createCommandBuffers();
-  void freeCommandBuffers();
-  void drawFrame();
-  void recreateSwapChain();
-  void recordCommandBuffer(int imageIndex);
   void renderGameObjects(VkCommandBuffer commandBuffer);
 
   Window ygeWindow{WIDTH, HEIGHT, "Vulkan Tutorial"};
   Device ygeDevice{ygeWindow};
-  std::unique_ptr<SwapChain> ygeSwapChain;
+  Renderer renderer{ygeWindow, ygeDevice};
+
   std::unique_ptr<Pipeline> ygePipeline;
   VkPipelineLayout pipelineLayout;
-  std::vector<VkCommandBuffer> commandBuffers;
   std::vector<GameObject> gameObjects;
 };
 }  // namespace yge
